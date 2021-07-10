@@ -15,12 +15,21 @@ class LoadFactOperator(BaseOperator):
     @apply_defaults
     def __init__(self,
                  redshift_conn_id = "",
+                 append_data = None,
                  *args, **kwargs):
 
         super(LoadFactOperator, self).__init__(*args, **kwargs)
         self.redshift_conn_id = redshift_conn_id
+        self.append_data = append_data
 
     def execute(self, context):
         redshift = PostgresHook(self.redshift_conn_id)
-        redshift.run(insert_songplay_data)
-        self.log.info('Songplay Data Was Imported')
+        if self.append_data == True:            
+            redshift.run(insert_songplay_data)
+            self.log.info('Fact Data Was Imported Through Append')
+        else:
+            sql_statement = 'DELETE FROM songplays'
+            redshift.run(sql_statement)
+            sql_statement = insert_songplay_data
+            redshift.run(sql_statement)
+            self.log.info('Fact Data Was Imported Through Truncate')
